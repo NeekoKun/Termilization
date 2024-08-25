@@ -1,0 +1,8 @@
+33 = no tile 
+34 = ocean
+35 = sea
+36 = plains
+37 = grassland
+38 = desert
+39 = tundra
+40 = snow
