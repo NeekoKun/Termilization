@@ -1,5 +1,6 @@
 import numpy as np
 import noise
+import math
 
 class Map:
     def __init__(self, width=0, height=0) -> None:
@@ -19,7 +20,11 @@ class Map:
         for i in range(size[1]):
             elevation_grid.append([])
             for j in range(size[0]):
-                elevation_grid[i].append(noise.pnoise2(8*j / scale, (4*i + 2*(j%2)) / scale, base=seed))
+                elevation_grid[i].append(noise.pnoise3(
+                    (4*size[0] / math.pi) * math.sin((8*j) * (2 * math.pi) / (8*size[0])) / scale,
+                    (4*size[0] / math.pi) * math.cos((8*j) * (2 * math.pi) / (8*size[0])) / scale,
+                    (4*i + 2*(j%2)) / scale,
+                    base=seed))
 
         match shape:
             case 'island':
