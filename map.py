@@ -1,3 +1,5 @@
+import logging
+import random
 import numpy as np
 import noise
 import math
@@ -6,16 +8,34 @@ class Map:
     def __init__(self, width=0, height=0) -> None:
         self.width = width
         self.height = height
-    
-    def island_function(self, x, y, center, radius):
-        return (((y-center[1])**2 + (x-center[0])**2)/radius)**200
+        logging.basicConfig(filename='map.log')
 
+
+    def generate_island_mask(self, center, radius):
+        self.mask = []
+
+        for y in range(self.height):
+            self.mask.append([])
+            for x in range(self.width):
+                self.mask[y].append((((y-center[1])**2 + (x-center[0])**2)/radius)**100)
+                if self.mask[y][-1] > 1:
+                    self.mask[y][-1] = 1
+                self.mask[y][-1] = round(1 - self.mask[y][-1], 2)
+
+    """
+    def generate_archipelago_mask(self, x, y, seed=0):
+        random.seed = seed
+
+        if not self.islands:
+            self.islands = [random.randint(), random.randint() for _ in range(random.randint(5, 20))]
+"""
     def generateNewMap(self, size: list, scale=30, seed=3, radius=10, shape='island'):
         self.grid = []
 
         for i in range(size[1]):
             self.grid.append([])
 
+        # generate basic elevation map
         elevation_grid = []
         for i in range(size[1]):
             elevation_grid.append([])
@@ -24,26 +44,35 @@ class Map:
                     (4*size[0] / math.pi) * math.sin((8*j) * (2 * math.pi) / (8*size[0])) / scale,
                     (4*size[0] / math.pi) * math.cos((8*j) * (2 * math.pi) / (8*size[0])) / scale,
                     (4*i + 2*(j%2)) / scale,
-                    base=seed))
+                    base=seed) + 0.5)
+
+        self.generate_island_mask((len(elevation_grid[0])/2, len(elevation_grid)/2), 70)
+        for row in self.mask:
+            logging.warning(row)
 
         match shape:
             case 'island':
+                self.generate_island_mask((len(elevation_grid[0])/2, len(elevation_grid)/2), 70)
+            case 'archipelago':
                 for y, row in enumerate(elevation_grid):
                     for x, cell in enumerate(row):
-                        elevation_grid[y][x] = cell - self.island_function(x, y+0.5*x%2, (len(row)/2, len(elevation_grid)/2), 100)
+                        elevation_grid[y][x] = cell - self.archipelago_function(x, y+0.5%2, seed)
+
             case _:
-                pass
+                self.mask = [[1 for _ in range(self.width)] for _ in range(self.height)]
+
+        elevation_grid = [[cell * self.mask[y][x]  for x, cell in enumerate(row)] for y, row in enumerate(elevation_grid)]
 
         for y, row in enumerate(elevation_grid):
             for cell in row:
                 match cell:
-                    case cell if cell < 0:
+                    case cell if cell < 0.5:
                         self.grid[y].append(' ')
-                    case cell if 0 <= cell < 0.2:
+                    case cell if 0.5 <= cell < 0.7:
                         self.grid[y].append(1)
-                    case cell if 0.2 <= cell < 0.4:
+                    case cell if 0.7 <= cell < 0.9:
                         self.grid[y].append(3)
-                    case cell if 0.4 <= cell:
+                    case cell if 0.9 <= cell:
                         self.grid[y].append('#')
         
         self.height = len(self.grid)
