@@ -33,7 +33,6 @@ class Map:
 
         for y, row in enumerate(matrix):
             for x, cell in enumerate(row):
-                print(cell)
                 pygame.draw.rect(screen, (255*cell/3, 255*cell/3, 255*cell/3), pygame.Rect(x*scale[0], y*scale[1], scale[0], scale[1]))
         
         pygame.display.flip()
@@ -41,7 +40,7 @@ class Map:
         while True:
             pass
 
-    def generateNewMap(self, size = None, scale=30, seed=3, radius=10, shape='island', temperature=0):
+    def generateNewMap(self, size = None, scale=30, seed=3, radius=10, shape='island', temperature=0, water_ratio=0.4):
         if size == None:
             size = (self.width, self.height)
 
@@ -55,6 +54,8 @@ class Map:
         ### Generate basic elevation grid ###
         elevation_grid = []
 
+
+        """ For side-to-side warping
         for i in range(size[1]):
             elevation_grid.append([])
             for j in range(size[0]):
@@ -64,7 +65,18 @@ class Map:
                     (4*i + 2*(j%2)) / scale,
                     base=seed, octaves=3, lacunarity=2, persistence=0.5
                     ))
+        """
 
+        for i in range(size[1]):
+            elevation_grid.append([])
+            for j in range(size[0]):
+                elevation_grid[i].append(noise.pnoise2(
+                    (8*j) / scale,
+                    (4*i + 2*(j%2)) / scale,
+                    base=seed, octaves=3, lacunarity=2, persistence=0.5
+                    ))
+
+                    
         mn = min([min(row) for row in elevation_grid])
         elevation_grid = [[i - mn for i in row] for row in elevation_grid]
         mx = max([max(row) for row in elevation_grid])
@@ -84,9 +96,9 @@ class Map:
         for y, row in enumerate(elevation_grid):
             for cell in row:
                 match cell:
-                    case cell if cell < 0.5:
+                    case cell if cell < water_ratio:
                         self.elevation_grid[y].append(0)
-                    case cell if 0.5 <= cell < 0.7:
+                    case cell if water_ratio <= cell < 0.7:
                         self.elevation_grid[y].append(1)
                     case cell if 0.7 <= cell < 0.9:
                         self.elevation_grid[y].append(2)
@@ -101,6 +113,7 @@ class Map:
         # Perturbate with 3d perlin noise
         turbolence_dim = 3
 
+        """ For side-to-side warping
         turbolence_map = [[
                         noise.pnoise3(
                         (4*self.width / math.pi) * math.sin((2*x) * math.pi / self.width) / scale,
@@ -108,7 +121,15 @@ class Map:
                         (4*y + 2*(x%2)) / scale,
                         base=seed+1) for x, cell in enumerate(row)
                     ] for y, row in enumerate(heat_map)]
+        """
 
+        turbolence_map = [[
+                        noise.pnoise2(
+                        (8*x) / scale,
+                        (4*y + 2*(x%2)) / scale,
+                        base=seed+1) for x, cell in enumerate(row)
+                    ] for y, row in enumerate(heat_map)]
+                    
         # Normalize and dim turbolence map 
 
         mn = min([min(row) for row in turbolence_map])
@@ -140,8 +161,6 @@ class Map:
                         self.heat_grid[-1].append(self.COLD)
                     case cell if cold_threshold <= cell:
                         self.heat_grid[-1].append(self.ICE)
-
-        self.display_matrix(self.heat_grid)
 
         ### Generate biome grid ###
 
