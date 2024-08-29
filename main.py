@@ -66,21 +66,9 @@ class Game:
                 properties["elevation"] = cell
                 properties["heat"] = self.map.heat_grid[y][x]
 
-                self.draw_hexagon(4*y + 2*(x%2), 2+8*x, properties)
+                self.draw_hexagon(6*y + 3*(x%2), 2+10*x, properties)
 
     def draw_hexagon(self, y, x, properties: dict):
-        # Draw frame
-        # TODO: modify frame color in function of country borders
-
-        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
-
-        self.map_pad.addstr(y,   x,     "·-----·",   curses.color_pair(1))
-        self.map_pad.addstr(y+1, x-1,  "/       \\", curses.color_pair(1))
-        self.map_pad.addstr(y+2, x-2, "·         ·", curses.color_pair(1))
-        self.map_pad.addstr(y+3, x-1,  "\\       /", curses.color_pair(1))
-        self.map_pad.addstr(y+4, x,     "·-----·",   curses.color_pair(1))
-
-        # Draw content
 
         match properties["elevation"]:
             case 0:
@@ -92,16 +80,15 @@ class Game:
             case 3:
                 color = self.MOUNTINE
 
-        logging.warning(color)
-
         curses.init_pair(color, curses.COLOR_WHITE, color)
 
-        logging.warning(curses.color_pair(2))
+        self.map_pad.addstr(y,   x,     "        ",   curses.color_pair(color))
+        self.map_pad.addstr(y+1, x-1,  "          ",  curses.color_pair(color))
+        self.map_pad.addstr(y+2, x-2, "            ", curses.color_pair(color))
+        self.map_pad.addstr(y+3, x-2, "            ", curses.color_pair(color))
+        self.map_pad.addstr(y+4, x-1,  "          ",  curses.color_pair(color))
+        self.map_pad.addstr(y+5, x,     "        ",   curses.color_pair(color))
 
-        self.map_pad.addstr(y+1, x,    "       ",  curses.color_pair(color))
-        self.map_pad.addstr(y+2, x-1, "    "+str(properties["heat"])+"    ", curses.color_pair(color))
-        self.map_pad.addstr(y+3, x,    "       ",  curses.color_pair(color))
-                
     def print_map(self, stdscr):
         self.map_pad.refresh(self.current_position[1], self.current_position[0], 0, 0, self.rows - 1, self.cols - 1)
 
@@ -110,13 +97,13 @@ class Game:
 
         self.init_colors()
 
-        self.map_pad = curses.newpad(3 + 4*self.map.height, 3 + 8*self.map.width)
+        self.map_pad = curses.newpad(3 + 6*self.map.height, 2 + 10*self.map.width)
 
         self.draw_map()
         self.rows, self.cols = stdscr.getmaxyx()
         self.current_position = [0, 0]
 
-        self.max_position = ((3 + 8*self.map.width) - (self.cols), (3 + 4*self.map.height) - (self.rows))
+        self.max_position = ((2 + 10*self.map.width) - (self.cols), (3 + 6*self.map.height) - (self.rows))
 
         while True:
             stdscr.refresh()
